@@ -1,4 +1,4 @@
-//! Simple pattern to implement maps where the value type also contains the key type.
+//! A simple pattern to implement maps where the value type also contains the key type.
 //! Implementations for `HashMap` and `BTreeMap` from `std::collections` are provided.
 //!
 //! ```
@@ -37,6 +37,8 @@
 //! let inner: HashMap<_, _> = map.into();
 //! let map: AutoHashMap<_> = inner.into();
 //! ```
+
+#![deny(missing_docs)]
 
 #[cfg(test)]
 mod tests;
@@ -93,6 +95,7 @@ macro_rules! implementation {
                 self.0.insert(val.key().clone(), val)
             }
 
+            /// Pass-through for inner `into_iter`
             pub fn into_iter(self) -> impl Iterator<Item = (T::Key, T)> {
                 self.0.into_iter()
             }
@@ -106,15 +109,19 @@ implementation!(AutoBTreeMap, BTreeMap, AutoBTreeMapKey);
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "serde")] {
+        /// The constraints on an AutoHashMap key
         pub trait AutoHashMapKey: serde::Serialize + serde::de::DeserializeOwned + Clone + std::hash::Hash + PartialEq + Eq {}
         impl<T> AutoHashMapKey for T where T: serde::Serialize + serde::de::DeserializeOwned + Clone + std::hash::Hash + PartialEq + Eq {}
 
+        /// The constraints on an AutoBTreeMap key
         pub trait AutoBTreeMapKey: serde::Serialize + serde::de::DeserializeOwned + Clone + PartialOrd + Ord {}
         impl<T> AutoBTreeMapKey for T where T: serde::Serialize + serde::de::DeserializeOwned + Clone + PartialOrd + Ord {}
     } else {
+        /// The constraints on an AutoHashMap key
         pub trait AutoHashMapKey: Clone + std::hash::Hash + PartialEq + Eq {}
         impl<T> AutoHashMapKey for T where T: Clone + std::hash::Hash + PartialEq + Eq {}
 
+        /// The constraints on an AutoBTreeMap key
         pub trait AutoBTreeMapKey: Clone + PartialOrd + Ord {}
         impl<T> AutoBTreeMapKey for T where T: Clone + PartialOrd + Ord {}
 
