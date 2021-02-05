@@ -16,6 +16,10 @@ impl AutoMapped for Person {
     }
 }
 
+/// A struct just to ensure that the proper traits are defined
+#[derive(Default, Debug, PartialEq, Eq)]
+struct Outer(AutoHashMap<Person>);
+
 #[test]
 fn auto_hashmap() {
     let mut hashmap = AutoHashMap::<Person>::new();

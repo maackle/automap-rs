@@ -41,9 +41,6 @@
 #[cfg(test)]
 mod tests;
 
-// pub use btree::*;
-// pub use hash::*;
-
 /// Trait that describes how to get a Hashable key out of a value
 pub trait AutoMapped {
     /// The key type
@@ -58,12 +55,29 @@ macro_rules! implementation {
         use std::collections::$inner;
 
         /// A $inner whose values contain their keys
-        #[derive(Debug, Clone, shrinkwraprs::Shrinkwrap, derive_more::From, derive_more::Into)]
+        #[derive(
+            Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            shrinkwraprs::Shrinkwrap,
+            derive_more::From,
+            derive_more::Into,
+        )]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         #[shrinkwrap(mutable, unsafe_ignore_visibility)]
         pub struct $outer<T: AutoMapped>($inner<T::Key, T>)
         where
             T::Key: $bounds;
+
+        impl<T: AutoMapped> Default for $outer<T>
+        where
+            T::Key: $bounds,
+        {
+            fn default() -> Self {
+                Self($inner::default())
+            }
+        }
 
         impl<T: AutoMapped> $outer<T>
         where
@@ -86,6 +100,10 @@ macro_rules! implementation {
     };
 }
 
+// Implementations for both HashMap and BTreeMap are very similar
+implementation!(AutoHashMap, HashMap, AutoHashMapKey);
+implementation!(AutoBTreeMap, BTreeMap, AutoBTreeMapKey);
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "serde")] {
         pub trait AutoHashMapKey: serde::Serialize + serde::de::DeserializeOwned + Clone + std::hash::Hash + PartialEq + Eq {}
@@ -102,7 +120,3 @@ cfg_if::cfg_if! {
 
     }
 }
-
-// Implementations for both HashMap and BTreeMap are very similar
-implementation!(AutoHashMap, HashMap, AutoHashMapKey);
-implementation!(AutoBTreeMap, BTreeMap, AutoBTreeMapKey);
