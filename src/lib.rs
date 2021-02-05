@@ -1,4 +1,5 @@
-//! Simple pattern to implement maps where the value type also contains the key type
+//! Simple pattern to implement maps where the value type also contains the key type.
+//! Implementations for `HashMap` and `BTreeMap` from `std::collections` are provided.
 //!
 //! ```
 //! use std::collections::HashMap;
@@ -37,14 +38,11 @@
 //! let map: AutoHashMap<_> = inner.into();
 //! ```
 
-mod btree;
-mod hash;
-
 #[cfg(test)]
 mod tests;
 
-pub use btree::*;
-pub use hash::*;
+// pub use btree::*;
+// pub use hash::*;
 
 /// Trait that describes how to get a Hashable key out of a value
 pub trait AutoMapped {
@@ -54,3 +52,57 @@ pub trait AutoMapped {
     /// Accessor for the key
     fn key(&self) -> &Self::Key;
 }
+
+macro_rules! implementation {
+    ($outer: ident, $inner: ident, $bounds: path) => {
+        use std::collections::$inner;
+
+        /// A $inner whose values contain their keys
+        #[derive(Debug, Clone, shrinkwraprs::Shrinkwrap, derive_more::From, derive_more::Into)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        #[shrinkwrap(mutable, unsafe_ignore_visibility)]
+        pub struct $outer<T: AutoMapped>($inner<T::Key, T>)
+        where
+            T::Key: $bounds;
+
+        impl<T: AutoMapped> $outer<T>
+        where
+            T::Key: $bounds,
+        {
+            /// Constructor
+            pub fn new() -> Self {
+                Self($inner::new())
+            }
+
+            /// Insert a key-value pair via just the value
+            pub fn insert(&mut self, val: T) -> Option<T> {
+                self.0.insert(val.key().clone(), val)
+            }
+
+            pub fn into_iter(self) -> impl Iterator<Item = (T::Key, T)> {
+                self.0.into_iter()
+            }
+        }
+    };
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "serde")] {
+        pub trait AutoHashMapKey: serde::Serialize + serde::de::DeserializeOwned + Clone + std::hash::Hash + PartialEq + Eq {}
+        impl<T> AutoHashMapKey for T where T: serde::Serialize + serde::de::DeserializeOwned + Clone + std::hash::Hash + PartialEq + Eq {}
+
+        pub trait AutoBTreeMapKey: serde::Serialize + serde::de::DeserializeOwned + Clone + PartialOrd + Ord {}
+        impl<T> AutoBTreeMapKey for T where T: serde::Serialize + serde::de::DeserializeOwned + Clone + PartialOrd + Ord {}
+    } else {
+        pub trait AutoHashMapKey: Clone + std::hash::Hash + PartialEq + Eq {}
+        impl<T> AutoHashMapKey for T where T: Clone + std::hash::Hash + PartialEq + Eq {}
+
+        pub trait AutoBTreeMapKey: Clone + PartialOrd + Ord {}
+        impl<T> AutoBTreeMapKey for T where T: Clone + PartialOrd + Ord {}
+
+    }
+}
+
+// Implementations for both HashMap and BTreeMap are very similar
+implementation!(AutoHashMap, HashMap, AutoHashMapKey);
+implementation!(AutoBTreeMap, BTreeMap, AutoBTreeMapKey);
