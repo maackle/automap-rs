@@ -43,7 +43,7 @@
 #[cfg(test)]
 mod tests;
 
-/// Trait that describes how to get a Hashable key out of a value
+/// Trait that describes how to extract a key out of a value
 pub trait AutoMapped {
     /// The key type
     type Key;
@@ -56,7 +56,7 @@ macro_rules! implementation {
     ($outer: ident, $inner: ident, $bounds: path) => {
         use std::collections::$inner;
 
-        /// A $inner whose values contain their keys
+        /// A map whose values also contain their keys
         #[derive(
             Debug,
             Clone,

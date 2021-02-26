@@ -1,6 +1,6 @@
 # automap
 
-Simple pattern to implement maps where the value type also contains the key type.
+Simple pattern to implement key-value maps where the value type contains the key type.
 Implementations for `HashMap` and `BTreeMap` from `std::collections` are provided.
 
 ## Example
@@ -43,7 +43,12 @@ let inner: HashMap<_, _> = map.into();
 let map: AutoHashMap<_> = inner.into();
 ```
 
+## Serde support
+
+Set the `"serde"` feature in your dependencies to include de/serialization support.
+
 ## Future improvements
 
 - Avoid cloning the key: ideally, the key would be borrowed from the value, but it wasn't immediately apparent how to do this while still providing serde deserialization. Perhaps a bespoke data structure could be written instead of leaning on `std::collections`.
+    - This could also be implemented with a proc macro which splits the target struct into the key part and the remainder, so that the key is only stored once while still using a standard Map.
 - Allow a value type to have multiple `Automapped` implementations, specifying different keys for different situations
