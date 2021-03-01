@@ -10,9 +10,14 @@ struct Person {
 
 impl AutoMapped for Person {
     type Key = String;
+    type Value = u16;
 
-    fn key(&self) -> &Self::Key {
-        &self.name
+    fn split(self) -> (Self::Key, Self::Value) {
+        (self.name, self.age)
+    }
+
+    fn join((name, age): (Self::Key, Self::Value)) -> Self {
+        Self { name, age }
     }
 }
 
@@ -37,15 +42,19 @@ fn auto_hashmap() {
     };
     assert_eq!(hashmap.insert(bob1.clone()), None);
     assert_eq!(hashmap.insert(ruth.clone()), None);
-    assert_eq!(hashmap.insert(bob2.clone()), Some(bob1.clone()));
+    assert_eq!(hashmap.insert(bob2.clone()), Some(bob1.age));
     assert_eq!(
-        hashmap.values().collect::<HashSet<&Person>>(),
-        vec![&bob2, &ruth].into_iter().collect()
+        hashmap
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .map(Person::join)
+            .collect::<HashSet<Person>>(),
+        vec![bob2.clone(), ruth.clone()].into_iter().collect()
     );
     assert_eq!(hashmap.len(), 2);
-    assert_eq!(hashmap.get("Bob"), Some(&bob2));
-    assert_eq!(hashmap.remove("Bob"), Some(bob2));
-    assert_eq!(hashmap.remove("Ruth"), Some(ruth));
+    assert_eq!(hashmap.get_cloned("Bob".to_string()), Some(bob2.clone()));
+    assert_eq!(hashmap.remove("Bob".into()), Some(bob2.age));
+    assert_eq!(hashmap.remove("Ruth".into()), Some(ruth.age));
 }
 
 #[test]
@@ -65,13 +74,13 @@ fn auto_btreemap() {
     };
     assert_eq!(hashmap.insert(bob1.clone()), None);
     assert_eq!(hashmap.insert(ruth.clone()), None);
-    assert_eq!(hashmap.insert(bob2.clone()), Some(bob1.clone()));
+    assert_eq!(hashmap.insert(bob2.clone()), Some(bob1.age));
     assert_eq!(
-        hashmap.values().collect::<HashSet<&Person>>(),
-        vec![&bob2, &ruth].into_iter().collect()
+        hashmap.values().collect::<HashSet<&u16>>(),
+        vec![&bob2.age, &ruth.age].into_iter().collect()
     );
     assert_eq!(hashmap.len(), 2);
-    assert_eq!(hashmap.get("Bob"), Some(&bob2));
-    assert_eq!(hashmap.remove("Bob"), Some(bob2));
-    assert_eq!(hashmap.remove("Ruth"), Some(ruth));
+    assert_eq!(hashmap.get("Bob"), Some(&bob2.age));
+    assert_eq!(hashmap.remove("Bob"), Some(bob2.age));
+    assert_eq!(hashmap.remove("Ruth"), Some(ruth.age));
 }
